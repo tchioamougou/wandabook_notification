@@ -7,6 +7,7 @@ const app = express();
 
 // Utilisation de urlencoded pour les requêtes CinetPay
 app.use(bodyParser.urlencoded({ extended: false }));
+app.get("/", (req, res) => res.send("Express on Vercel"));  
 
 // Middleware pour lire l'en-tête x-token
 app.use((req, res, next) => {
