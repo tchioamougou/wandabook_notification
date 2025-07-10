@@ -15,7 +15,10 @@ const callFunction = async (functionId, payload,  path) => {
             false, // async (optional)
             path, // path (optional)
             ExecutionMethod.POST, // method (optional)
-            {}, // headers (optional)
+            {
+                 duration: 60
+            }, // headers (optional)
+
      );
         return response;
     } catch (error) {

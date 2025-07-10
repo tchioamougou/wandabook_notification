@@ -9,17 +9,14 @@ const app = express();
 app.use(express.json());
 // Middleware
 
-const transporter = nodemailer.createTransport({
-    host: "smtp.office365.com",
-  port: 465, // port SSL
-  secure: true, // SSL direct
+var transporter = nodemailer.createTransport({
+  host: "live.smtp.mailtrap.io",
+  port: 587,
   auth: {
-    user: process.env.EMAIL_ADDRESS,
-    pass: process.env.EMAIL_PASSWORD,
+    user: "api",
+    pass: process.env.EMAIL_TOKEN, // Utilisez le token d'API pour l'authentification
   },
 });
-
-app.use(bodyParser.urlencoded({ extended: false }));
 
 // Routes
 app.get("/", (req, res) => res.send("Express on Vercel"));
@@ -30,7 +27,6 @@ app.post("/notification", async (req, res) => {
     cpm_trans_id,
     cpm_site_id,
   };
-
   try {
     const response = await callFunction(
       process.env.APPWRITE_FUNCTION_NOTIFY_ID,
@@ -71,9 +67,12 @@ app.post("/send-email", async (req, res) => {
   if (!from || !to || !subject || !text) {
     return res.status(400).json({ error: "Champs manquants" });
   }
-
+  const sender = {
+    address: "hello@wandabook.com",
+    name: "Wandabook Support",
+  };
   const mailOptions = {
-    from,
+    from: sender,
     to,
     subject,
     text,
