@@ -5,9 +5,7 @@ const { callFunction } = require("./appwriteClient");
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 const app = express();
-// ✅ Support application/json
 app.use(express.json());
-// Middleware
 
 var transporter = nodemailer.createTransport({
   host: "live.smtp.mailtrap.io",
@@ -58,9 +56,18 @@ app.post("/paymentcancel", async (req, res) => {
 });
 
 // Transporter configuré pour Outlook
-
+// Preflight handler for /send-email
+app.options('/send-email', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.status(200).end();
+});
 // Route POST pour envoyer un e-mail
 app.post("/send-email", async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*'); // or specific origin
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   const { to, subject, text } = req.body;
   const from = process.env.EMAIL_ADDRESS; // Adresse e-mail de l'expéditeur
   // Vérifie que tous les champs sont présents
