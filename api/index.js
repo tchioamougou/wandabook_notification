@@ -3,6 +3,7 @@ const bodyParser = require("body-parser");
 const serverless = require("serverless-http");
 const { callFunction } = require("./appwriteClient");
 const nodemailer = require("nodemailer");
+const cron = require("node-cron");
 require("dotenv").config();
 const app = express();
 app.use(express.json());
@@ -25,6 +26,7 @@ app.post("/notification", async (req, res) => {
     cpm_trans_id,
     cpm_site_id,
   };
+  console.log(req.body), console.log(JSON.stringify(req.body));
   try {
     const response = await callFunction(
       process.env.APPWRITE_FUNCTION_NOTIFY_ID,
@@ -55,19 +57,41 @@ app.post("/paymentcancel", async (req, res) => {
   }
 });
 
+app.post("/checkPayment", async (req, res) => {
+  const { cpm_trans_id, cpm_site_id } = req.body;
+  const sixMinutesFromNow = new Date(Date.now() + 5 * 60 * 1000);
+  const cronSchedule = `${sixMinutesFromNow.getMinutes()} ${sixMinutesFromNow.getHours()} ${sixMinutesFromNow.getDate()} ${sixMinutesFromNow.getMonth() + 1} *`;
+  const payload = {
+    cpm_trans_id,
+    cpm_site_id,
+  };
+  try {
+    // Schedule a task to run every day at 9:00 AM
+    cron.schedule(cronSchedule, async () => {
+      const response = await callFunction(
+        process.env.APPWRITE_FUNCTION_NOTIFY_ID,
+        payload,
+        "paymentnotification"
+      );
+    });
+    res.status(200).json({ success: true, appwriteResponse: response });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 // Transporter configuré pour Outlook
 // Preflight handler for /send-email
-app.options('/send-email', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+app.options("/send-email", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.status(200).end();
 });
 // Route POST pour envoyer un e-mail
 app.post("/send-email", async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*'); // or specific origin
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader("Access-Control-Allow-Origin", "*"); // or specific origin
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   const { to, subject, text } = req.body;
   const from = process.env.EMAIL_ADDRESS; // Adresse e-mail de l'expéditeur
   // Vérifie que tous les champs sont présents
