@@ -7,7 +7,7 @@ const cron = require("node-cron");
 require("dotenv").config();
 const app = express();
 app.use(express.json());
-
+app.use(express.urlencoded({ extended: true }));
 var transporter = nodemailer.createTransport({
   host: "live.smtp.mailtrap.io",
   port: 587,
@@ -21,7 +21,24 @@ var transporter = nodemailer.createTransport({
 app.get("/", (req, res) => res.send("Express on Vercel"));
 
 app.post("/notification", async (req, res) => {
+
+console.log("Corps de la requête reçu :", req.body);
+  console.log("Corps de la requête stringifié :", JSON.stringify(req.body));
+
+  // Vérifiez si req.body contient les données attendues
+  if (!req.body || Object.keys(req.body).length === 0) {
+    console.error("Le corps de la requête est vide ou non parsé.");
+    return res.status(400).json({ success: false, message: "Corps de la requête vide ou mal formaté." });
+  }
+
   const { cpm_trans_id, cpm_site_id } = req.body;
+
+  // Assurez-vous que les variables nécessaires sont présentes
+  if (!cpm_trans_id || !cpm_site_id) {
+    console.error("Données de transaction manquantes dans le webhook.");
+    return res.status(400).json({ success: false, message: "Données de transaction (cpm_trans_id ou cpm_site_id) manquantes." });
+  }
+
   const payload = {
     cpm_trans_id,
     cpm_site_id,
@@ -67,14 +84,16 @@ app.post("/checkPayment", async (req, res) => {
   };
   try {
     // Schedule a task to run every day at 9:00 AM
+    console.log('cron',cronSchedule)
     cron.schedule(cronSchedule, async () => {
+      console.log("exectute")
       const response = await callFunction(
         process.env.APPWRITE_FUNCTION_NOTIFY_ID,
         payload,
         "paymentnotification"
       );
     });
-    res.status(200).json({ success: true, appwriteResponse: response });
+    res.status(200).json({ success: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
